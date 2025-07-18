@@ -399,7 +399,7 @@ class CFXAutomationWorkflow:
                 logger.error("连接服务器失败")
                 return False
             
-            # 执行批量提交脚本
+            # 执行批量提交脚本（只执行一次，脚本内部会处理所有压力值）
             batch_script_path = os.path.join(self.config.remote_base_path, self.config.batch_script_name).replace('\\', '/')
             
             # 检查批量提交脚本是否存在
@@ -414,7 +414,8 @@ class CFXAutomationWorkflow:
             # 确保脚本有执行权限
             self.file_manager.execute_remote_command(f"chmod +x {batch_script_path}")
             
-            # 执行批量提交脚本
+            # 执行批量提交脚本（一次性提交所有压力值的作业）
+            logger.info(f"执行批量提交脚本，将处理压力值: {pressure_list}")
             result = self.file_manager.execute_remote_command(
                 f"cd {self.config.remote_base_path.replace('\\', '/')} && ./{self.config.batch_script_name}",
                 timeout=600  # 10分钟超时

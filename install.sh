@@ -15,6 +15,28 @@ if ! command -v pip &> /dev/null; then
     exit 1
 fi
 
+# 询问是否创建虚拟环境
+echo ""
+echo "是否创建虚拟环境?"
+echo "1) 是 (推荐)"
+echo "2) 否"
+echo ""
+read -p "请输入选择 (1-2): " venv_choice
+
+if [ "$venv_choice" = "1" ]; then
+    echo "创建虚拟环境..."
+    
+    # 创建虚拟环境
+    python -m venv cfx-env
+    
+    # 激活虚拟环境
+    source cfx-env/bin/activate
+    
+    echo "虚拟环境创建并激活成功!"
+    echo "注意: 每次使用前需要激活虚拟环境: source cfx-env/bin/activate"
+    echo ""
+fi
+
 # 询问安装类型
 echo ""
 echo "请选择安装类型:"
@@ -85,6 +107,15 @@ esac
 echo ""
 echo "=== 安装完成 ==="
 echo ""
+
+# 显示虚拟环境使用说明
+if [ "$venv_choice" = "1" ]; then
+    echo "虚拟环境使用说明:"
+    echo "- 激活虚拟环境: source cfx-env/bin/activate"
+    echo "- 退出虚拟环境: deactivate"
+    echo ""
+fi
+
 echo "下一步:"
 echo "1. 复制配置文件: cp config/simple_config.yaml config/my_config.yaml"
 echo "2. 编辑配置文件: 根据您的环境修改配置参数"
