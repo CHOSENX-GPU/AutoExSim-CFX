@@ -44,6 +44,11 @@
 
 ## 🛠️ 快速开始
 
+### 0.克隆项目
+```bash
+git clone https://github.com/CHOSENX-GPU/AutoExSim-CFX.git
+```
+
 ### 1. 安装依赖
 
 **推荐使用虚拟环境**：
