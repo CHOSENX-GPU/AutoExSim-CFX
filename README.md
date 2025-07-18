@@ -46,14 +46,35 @@
 
 ### 1. 安装依赖
 
+```bash
+# 创建虚拟环境
+python -m venv cfx-env
+
+# 激活虚拟环境
+# Windows PowerShell
+cfx-env\Scripts\Activate.ps1
+# Windows CMD
+cfx-env\Scripts\activate.bat
+# Linux/Mac
+source cfx-env/bin/activate
+```
+
 **生产环境（最小依赖）**：
+
 ```bash
 pip install -r requirements.txt
 ```
 
 **开发环境（完整依赖）**：
+
 ```bash
 pip install -r requirements-dev.txt
+```
+
+**退出虚拟环境**：
+
+```bash
+deactivate
 ```
 
 ### 2. 配置设置
