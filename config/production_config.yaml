@@ -1,0 +1,69 @@
+# CFX自动化批量提交配置
+# 完全可用的生产配置文件 - 基于真实服务器环境测试
+
+# CFX环境配置 - 本地环境
+cfx_version: "v221"
+cfx_file_path: "D:/Desktop/context-engineering-intro/use-cases/ansys-cfx-automation/demo.cfx"
+cfx_home: "D:/ANSYS Inc/v221/CFX"  # 本地CFX路径
+cfx_pre_executable: "D:/ANSYS Inc/v221/CFX/bin/cfx5pre.exe"  # 本地CFX Pre
+cfx_solver_executable: "D:/ANSYS Inc/v221/CFX/bin/cfx5solve.exe"  # 使用本地路径验证
+cfx_bin_path: "D:/ANSYS Inc/v221/CFX/bin"  # 本地CFX二进制文件路径
+auto_detect_cfx: false  # 禁用自动检测，使用手动配置
+
+# ===== 远程CFX环境配置 =====
+remote_cfx_home: "/opt/ansys/v221/CFX"
+remote_cfx_bin_path: "/opt/ansys/v221/CFX/bin"
+
+# 基础路径配置
+base_path: "D:/Desktop/context-engineering-intro/use-cases/ansys-cfx-automation/demo"
+
+# 背压参数配置 - 可扩展的压力列表
+pressure_list: [2600, 2700, 2800, 2900, 3000]  # 扩展压力范围
+pressure_unit: "Pa"
+
+# CFX模型配置
+flow_analysis_name: "Flow Analysis 1"
+domain_name: "S1"
+boundary_name: "S1 Outlet"
+outlet_location: "R2_OUTFLOW"
+pressure_blend: "0.05"
+
+# 文件命名配置
+folder_prefix: "P_Out_"          # 生成文件夹: P_Out_2600, P_Out_2700
+def_file_prefix: ""              # 生成def文件: 2600.def, 2700.def
+
+# 作业配置
+job_name: "TA29_75_Production"   # 生产作业名称
+
+# 服务器配置 - 验证可用的配置
+ssh_host: "your.server.com"      # 您的服务器IP或域名
+ssh_port: 22
+ssh_user: "your_username"        # 您的服务器用户名
+ssh_password: "your_password"    # 您的服务器密码
+ssh_key: ""                      # SSH密钥路径（可选）
+remote_base_path: "/path/to/your/remote/directory"  # 远程工作目录路径
+
+# SLURM配置 - 优化的资源配置
+partition: "cpu-low"             # 验证可用的分区
+nodes: 1                         # 单节点作业
+tasks_per_node: 32               # 32核心
+time_limit: "7-00:00:00"        # 7天时间限制
+memory_per_node: "64GB"          # 64GB内存
+
+# 文件配置
+ini_file: null                   # 不使用初始化文件
+has_ini_file: false
+backup_enabled: true             # 启用备份
+cleanup_temp_files: true         # 清理临时文件
+
+# 报告配置
+report_dir: "./reports"          # 工作流程报告目录
+
+# 模板配置
+template_dir: "./templates"
+session_template: "create_def.pre.j2"
+slurm_template: "CFX_INI.slurm.j2"
+batch_template: "Submit_INI.sh.j2"
+
+# 连接配置
+timeout: 300                     # 5分钟超时

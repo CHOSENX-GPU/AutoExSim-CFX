@@ -1,0 +1,162 @@
+# CFX自动化配置 - 服务器CFX环境
+# 完全在服务器上进行CFX操作（生成def文件和运行计算）
+
+# ===== 基本配置 =====
+cfx_file_path: "D:/Desktop/TA29_radial_load/Pre/Grid Independence Gap/TA29_75/TA29_75.cfx"
+pressure_list: [2600, 2700, 2800, 2900, 3000, 3100, 3200, 3300, 3400, 3500]
+pressure_unit: "Pa"
+job_name: "TA29_75_Server_CFX"
+
+# ===== 服务器配置 =====
+ssh_host: "your.server.com"      # 您的服务器IP或域名
+ssh_port: 22
+ssh_user: "your_username"        # 您的服务器用户名
+ssh_password: "your_password"    # 您的服务器密码
+ssh_key: ""                      # SSH密钥路径（可选）
+remote_base_path: "/path/to/your/remote/directory"  # 远程工作目录路径
+
+# ===== SLURM配置 =====
+partition: "cpu-low"
+nodes: 1
+tasks_per_node: 32
+time_limit: "7-00:00:00"
+memory_per_node: "64GB"
+
+# ===== CFX环境配置 =====
+# 注意：这里使用服务器上的CFX环境进行所有操作
+cfx_version: "22.1"
+cfx_home: "/opt/ansys/v221/CFX"
+cfx_pre_executable: "/opt/ansys/v221/CFX/bin/cfx5pre"
+cfx_solver_executable: "/opt/ansys/v221/CFX/bin/cfx5solve"
+cfx_bin_path: "/opt/ansys/v221/CFX/bin"
+auto_detect_cfx: false
+
+# ===== 远程CFX环境配置 =====
+remote_cfx_home: "/opt/ansys/v221/CFX"
+remote_cfx_bin_path: "/opt/ansys/v221/CFX/bin"
+
+# ===== CFX模型配置 =====
+flow_analysis_name: "Flow Analysis 1"
+domain_name: "S1"
+boundary_name: "S1 Outlet"
+outlet_location: "R2_OUTFLOW"
+pressure_blend: "0.05"
+
+# ===== 文件命名配置 =====
+folder_prefix: "P_Out_"
+def_file_prefix: ""
+
+# ===== 基础路径配置 =====
+base_path: "D:/Desktop/TA29_radial_load/Pre/Grid Independence Gap/TA29_75/"
+
+# ===== 文件处理配置 =====
+ini_file: null
+has_ini_file: false
+backup_enabled: true
+cleanup_temp_files: true
+
+# ===== 模板配置 =====
+template_dir: "./templates"
+session_template: "create_def.pre.j2"
+slurm_template: "CFX_INI.slurm.j2"
+batch_template: "Submit_INI.sh.j2"
+
+# ===== 连接配置 =====
+timeout: 300
+
+# ===== 验证配置 =====
+validate_paths: true
+create_output_dirs: true
+verify_cfx_installation: true
+
+# ===== 性能配置 =====
+parallel_generation: true
+parallel_max_workers: 4
+backup_existing: true
+log_level: "INFO"
+
+# ===== 传输配置 =====
+transfer_chunk_size: 8192
+transfer_timeout: 1800
+verify_transfer: true
+upload_compression: true
+download_compression: true
+keep_server_files: false
+
+# ===== 监控配置 =====
+monitor_interval: 30
+max_monitor_time: 86400
+auto_download_results: true
+
+# ===== 错误处理配置 =====
+stop_on_error: false
+max_errors: 3
+error_notification: true
+
+# ===== 资源优化配置 =====
+compress_files: true
+batch_size: 10
+memory_limit: "90%"
+
+# ===== 安全配置 =====
+encrypt_passwords: false
+secure_transfer: true
+verify_ssl: false
+
+# ===== 输出配置 =====
+output_format: "detailed"
+save_logs: true
+log_rotation: true
+max_log_size: "10MB"
+
+# ===== 服务器CFX特定配置 =====
+# 服务器环境变量
+server_env_vars:
+  CFX_VERSION: "22.1"
+  ANSYS_ROOT: "/opt/ansys/v221"
+  CFX_ROOT: "/opt/ansys/v221/CFX"
+
+# 服务器CFX模块加载
+module_load_commands:
+  - "module load ansys/22.1"
+  - "module load intel/2021.4"
+  - "module load openmpi/4.1.1"
+
+# 服务器CFX许可证配置
+license_server: "your.license.server.com"  # 您的许可证服务器IP或域名
+license_port: 2325
+license_feature: "cfx"
+
+# ===== 描述信息 =====
+description: "TA29-CFX自动化批量提交 - 服务器CFX环境"
+author: "CHOSENX"
+version: "1.0.0"
+date: "2025-07-19"
+environment: "server"
+
+# ===== 工作流程说明 =====
+# 1. 上传CFX文件到服务器
+# 2. 服务器加载CFX环境模块
+# 3. 服务器CFX Pre生成session文件
+# 4. 服务器CFX Pre执行session文件生成def文件
+# 5. 服务器CFX Solver运行计算
+# 6. 下载计算结果
+
+# ===== 优势 =====
+# - 不需要本地安装CFX
+# - 充分利用服务器资源
+# - 减少文件传输量
+# - 服务器环境一致性
+
+# ===== 注意事项 =====
+# - 需要确保服务器CFX环境正确配置
+# - 需要验证服务器CFX许可证
+# - 需要足够的服务器存储空间
+# - 建议在服务器上设置专用工作目录
+
+# ===== 环境要求 =====
+# 服务器端：
+# - ANSYS CFX 22.1或更高版本
+# - 正确配置的计算节点
+# - 足够的许可证数量
+# - 充足的存储空间

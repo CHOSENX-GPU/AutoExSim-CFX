@@ -1,0 +1,73 @@
+# CFX自动化配置 - 本地CFX生成def文件
+# 使用本地CFX Pre生成def文件，然后上传到服务器运行
+
+# ===== 基本配置 =====
+cfx_file_path: "D:/Desktop/TA29_radial_load/Pre/Grid Independence Gap/TA29_75/TA29_75.cfx"  # CFX文件路径
+pressure_list: [2600, 2700, 2800]  # 背压列表
+pressure_unit: "Pa"
+job_name: "TA29_75_Local_Gen"
+
+# ===== 服务器配置 =====
+ssh_host: "your.server.com"  # 您的服务器IP或域名
+ssh_port: 22
+ssh_user: "your_username"    # 您的服务器用户名
+ssh_password: "your_password"  # 您的服务器密码
+ssh_key: ""                  # SSH密钥路径（可选）
+remote_base_path: "/path/to/your/remote/directory"  # 远程工作目录路径
+
+# ===== SLURM配置 =====
+partition: "cpu-low"
+nodes: 1
+tasks_per_node: 32
+time_limit: "7-00:00:00"
+memory_per_node: "64GB"
+
+# ===== CFX环境配置 =====
+cfx_version: "22.1"
+cfx_home: "D:/ANSYS Inc/v221/CFX"
+cfx_pre_executable: "D:/ANSYS Inc/v221/CFX/bin/cfx5pre.exe"
+cfx_solver_executable: "D:/ANSYS Inc/v221/CFX/bin/cfx5solve.exe"
+cfx_bin_path: "D:/ANSYS Inc/v221/CFX/bin"
+auto_detect_cfx: false
+
+# ===== 远程CFX环境配置 =====
+remote_cfx_home: "/path/to/your/ansys/installation/CFX"
+remote_cfx_bin_path: "/path/to/your/ansys/installation/CFX/bin"
+
+# ===== CFX模型配置 =====
+flow_analysis_name: "Flow Analysis 1"
+domain_name: "S1"
+boundary_name: "S1 Outlet"
+outlet_location: "R2_OUTFLOW"
+pressure_blend: "0.05"
+
+# ===== 文件命名配置 =====
+folder_prefix: "P_Out_"
+def_file_prefix: ""
+
+# ===== 基础路径配置 =====
+base_path: "D:/Desktop/TA29_radial_load/Pre/Grid Independence Gap/TA29_75/"
+# ===== 基础路径配置 =====
+base_path: "D:/Desktop/TA29_radial_load/Pre/Grid Independence Gap/TA29_75/"
+
+# ===== 文件配置 =====
+ini_file: null
+has_ini_file: false
+backup_enabled: true
+cleanup_temp_files: true
+
+# ===== 报告配置 =====
+report_dir: "./reports"
+
+# ===== 模板配置 =====
+template_dir: "./templates"
+session_template: "create_def.pre.j2"
+slurm_template: "CFX_INI.slurm.j2"
+batch_template: "Submit_INI.sh.j2"
+
+# ===== 生成的文件名称配置 =====
+slurm_script_name: "CFX_INI.slurm"
+batch_script_name: "Submit_INI.sh"
+
+# ===== 连接配置 =====
+timeout: 300

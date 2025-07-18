@@ -1,0 +1,82 @@
+#!/bin/bash
+# 批量提交CFX作业脚本 - 自动生成
+# 作业名称: {{ job_name }}
+# 生成时间: {{ generation_time }}
+# 背压列表: {{ pressure_list | join(', ') }}
+
+# 设置基础路径
+BASE_PATH="{{ remote_base_path }}"
+JOB_NAME="{{ job_name }}"
+
+# 定义背压列表
+PRESSURE_LIST=({% for pressure in pressure_list %}{{ pressure }}{% if not loop.last %} {% endif %}{% endfor %})
+
+# 记录开始时间
+echo "开始批量提交作业: $(date)"
+echo "基础路径: $BASE_PATH"
+echo "作业名称: $JOB_NAME"
+echo "背压列表: ${PRESSURE_LIST[@]}"
+
+# 计数器
+submitted_count=0
+failed_count=0
+
+# 遍历背压列表
+for pressure in "${PRESSURE_LIST[@]}"
+do
+    # 构建目录路径（去掉小数点后的0）
+    pressure_int=$(echo "$pressure" | sed 's/\.0$//')
+    pressure_dir="${BASE_PATH}/{{ folder_prefix }}${pressure_int}"
+    
+    # 检查目录是否存在
+    if [ -d "$pressure_dir" ]; then
+        echo "正在处理目录: $pressure_dir"
+        
+        # 进入目标目录
+        cd "$pressure_dir"
+        
+        # 检查Slurm脚本是否存在
+        if [ -f "{{ slurm_script_name }}" ]; then
+            # 提交作业
+            job_id=$(sbatch {{ slurm_script_name }} 2>&1)
+            
+            if [[ $job_id == *"Submitted batch job"* ]]; then
+                echo "✓ 成功提交作业: {{ folder_prefix }}${pressure} - $job_id"
+                ((submitted_count++))
+            else
+                echo "✗ 提交失败: {{ folder_prefix }}${pressure} - $job_id"
+                ((failed_count++))
+            fi
+        else
+            echo "✗ 未找到 {{ slurm_script_name }} 文件: $pressure_dir"
+            ((failed_count++))
+        fi
+        
+        # 添加延迟以避免过于频繁的提交
+        sleep 1
+    else
+        echo "✗ 目录不存在: $pressure_dir"
+        ((failed_count++))
+    fi
+done
+
+# 输出汇总信息
+echo "=================== 提交汇总 ==================="
+echo "提交成功: $submitted_count 个作业"
+echo "提交失败: $failed_count 个作业"
+echo "总计: $((submitted_count + failed_count)) 个作业"
+echo "完成时间: $(date)"
+
+# 如果有提交成功的作业，显示队列状态
+if [ $submitted_count -gt 0 ]; then
+    echo ""
+    echo "当前队列状态:"
+    squeue -u $USER --format="%.8i %.9P %.20j %.8u %.8T %.10M %.6D %R"
+fi
+
+# 返回适当的退出码
+if [ $failed_count -gt 0 ]; then
+    exit 1
+else
+    exit 0
+fi

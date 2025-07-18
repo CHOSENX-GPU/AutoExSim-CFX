@@ -1,0 +1,91 @@
+# CFX自动化系统 - 完整配置文件模板
+# 包含所有系统支持的参数和详细说明
+
+# ===== 基本配置 =====
+cfx_file_path: "PATH/TO/YOUR/CFX/FILE.cfx"  # CFX文件路径
+pressure_list: [2600, 2700, 2800, 2900, 3000]  # 背压列表
+pressure_unit: "Pa"  # 压力单位
+job_name: "CFX_Job"  # 作业名称
+
+# ===== 服务器配置 =====
+ssh_host: "YOUR_SERVER_IP"  # SSH主机地址
+ssh_port: 22  # SSH端口
+ssh_user: "YOUR_USERNAME"  # SSH用户名
+ssh_password: "YOUR_PASSWORD"  # SSH密码（可选）
+ssh_key: ""  # SSH密钥路径（可选）
+remote_base_path: "/path/to/remote/directory"  # 远程基础路径
+
+# ===== SLURM配置 =====
+partition: "cpu-low"  # SLURM分区
+nodes: 1  # 节点数
+tasks_per_node: 32  # 每个节点的任务数
+time_limit: "7-00:00:00"  # 时间限制（天-小时:分钟:秒）
+memory_per_node: "64GB"  # 每个节点的内存
+
+# ===== CFX环境配置 =====
+cfx_version: "22.1"  # CFX版本
+cfx_home: "D:/ANSYS Inc/v221/CFX"  # 本地CFX安装路径
+cfx_pre_executable: "D:/ANSYS Inc/v221/CFX/bin/cfx5pre.exe"  # CFX-Pre可执行文件
+cfx_solver_executable: "D:/ANSYS Inc/v221/CFX/bin/cfx5solve.exe"  # CFX-Solver可执行文件
+cfx_bin_path: "D:/ANSYS Inc/v221/CFX/bin"  # 本地CFX二进制文件路径
+auto_detect_cfx: false  # 是否自动检测CFX环境
+
+# ===== 远程CFX环境配置 =====
+remote_cfx_home: "/path/to/remote/cfx"  # 远程服务器CFX安装路径
+remote_cfx_bin_path: "/path/to/remote/cfx/bin"  # 远程服务器CFX二进制文件路径
+
+# ===== CFX模型配置 =====
+flow_analysis_name: "Flow Analysis 1"  # 流动分析名称
+domain_name: "S1"  # 域名称
+boundary_name: "S1 Outlet"  # 边界名称
+outlet_location: "R2_OUTFLOW"  # 出口位置
+pressure_blend: "0.05"  # 压力混合因子
+
+# ===== 文件命名配置 =====
+folder_prefix: "P_Out_"  # 文件夹前缀
+def_file_prefix: ""  # def文件前缀
+
+# ===== 基础路径配置 =====
+base_path: "PATH/TO/YOUR/WORK/DIRECTORY"  # 基础工作路径
+
+# ===== 文件配置 =====
+ini_file: null  # 初始化文件名（可选）
+has_ini_file: false  # 是否有初始化文件
+backup_enabled: true  # 是否启用备份
+cleanup_temp_files: true  # 是否清理临时文件
+
+# ===== 报告配置 =====
+report_dir: "./reports"  # 工作流程报告目录
+
+# ===== 模板配置 =====
+template_dir: "./templates"  # 模板目录
+session_template: "create_def.pre.j2"  # Session模板文件
+slurm_template: "CFX_INI.slurm.j2"  # SLURM模板文件
+batch_template: "Submit_INI.sh.j2"  # 批处理模板文件
+
+# ===== 生成的文件名称配置 =====
+slurm_script_name: "CFX_INI.slurm"  # SLURM脚本名称
+batch_script_name: "Submit_INI.sh"  # 批量提交脚本名称
+
+# ===== 连接配置 =====
+timeout: 300  # 连接超时时间（秒）
+
+# ===== 配置说明 =====
+# 1. 必填参数：
+#    - cfx_file_path: CFX文件路径
+#    - pressure_list: 背压参数列表
+#    - ssh_host, ssh_user: 服务器连接信息
+#    - remote_base_path: 远程工作目录
+#    - remote_cfx_bin_path: 远程CFX路径
+
+# 2. 可选参数：
+#    - ssh_password, ssh_key: 认证信息（至少需要一个）
+#    - ini_file: 初始化文件（如果has_ini_file为true）
+#    - 其他配置都有默认值
+
+# 3. 使用建议：
+#    - 复制此文件并修改为您的实际配置
+#    - 确保CFX路径正确
+#    - 确保服务器连接信息正确
+#    - 根据您的计算需求调整SLURM参数
+#    - 测试命令：python cfx_automation.py --config your_config.yaml run --dry-run

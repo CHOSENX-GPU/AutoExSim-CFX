@@ -1,0 +1,54 @@
+#!/bin/bash
+#SBATCH -J {{ job_name }}_{{ pressure_str }}    # 作业名
+#SBATCH -p {{ partition }}                      # 提交到指定分区
+#SBATCH -N {{ nodes }}                          # 使用节点数
+#SBATCH -n {{ tasks_per_node }}                 # 使用CPU核数
+#SBATCH --ntasks-per-node {{ tasks_per_node }}  # 每个节点使用的CPU核数
+#SBATCH -t {{ time_limit }}                     # 任务最大运行时间
+#SBATCH -o {{ slurm_output_file }}  # 标准输出文件
+#SBATCH -e {{ job_name }}_{{ pressure_str }}.err  # 错误输出文件
+{% if memory_per_node %}
+#SBATCH --mem={{ memory_per_node }}             # 内存限制
+{% endif %}
+
+# 设置输入文件
+INPUT="{{ def_file }}"
+{% if has_ini_file %}
+INITIAL="{{ ini_file }}"
+{% endif %}
+
+# 生成节点文件
+srun hostname | sort > machinefile.${SLURM_JOB_ID}
+
+# 设置CFX环境变量
+export PATH=$PATH:{{ remote_cfx_bin_path | default(cfx_bin_path) }}
+CFX=`which cfx5solve`
+
+# 计算总进程数
+NP=`cat machinefile.${SLURM_JOB_ID} | wc -l`
+
+# 构建机器列表
+mech_host=""
+for host in ` sort -u machinefile.${SLURM_JOB_ID}`;do
+  n=$(grep -c $host machinefile.${SLURM_JOB_ID})
+  mech_host=$(echo "$host*$n,$mech_host")
+done
+mech_host=$(echo $mech_host|sed "s/,$//")
+echo "使用的机器列表: $mech_host"
+
+# 执行CFX求解
+echo "开始求解 {{ job_name }} 在压力 {{ pressure_str }} {{ pressure_unit }} 下的算例"
+echo "定义文件: $INPUT"
+{% if has_ini_file %}
+echo "初始化文件: $INITIAL"
+{% endif %}
+echo "开始时间: $(date)"
+
+{% if has_ini_file %}
+$CFX -def $INPUT -ini-file $INITIAL -start-method "IBM MPI Distributed Parallel" -par-dist "$mech_host"
+{% else %}
+$CFX -def $INPUT -start-method "IBM MPI Distributed Parallel" -par-dist "$mech_host"
+{% endif %}
+
+echo "结束时间: $(date)"
+echo "作业 {{ job_name }}_{{ pressure_str }} 完成"

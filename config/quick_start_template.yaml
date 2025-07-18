@@ -1,0 +1,32 @@
+# CFX自动化系统 - 快速开始模板
+# 这是一个精简版配置文件，只包含必要的参数
+
+# ===== 必须配置的项目 =====
+# 1. CFX文件路径 - 请修改为您的CFX文件路径
+cfx_file_path: "您的CFX文件路径.cfx"  # 例如: "D:/Projects/MyProject/model.cfx"
+
+# 2. 压力参数 - 请设置您需要的压力值
+pressure_list: [2600, 2700, 2800]  # 请修改为您需要的压力值
+
+# 3. 作业名称 - 请设置一个有意义的名称
+job_name: "您的作业名称"  # 例如: "Turbine_Analysis"
+
+# 4. 服务器配置 - 请填写您的服务器信息
+ssh_host: "您的服务器IP"        # 例如: "192.168.1.100"
+ssh_user: "您的用户名"          # 例如: "username"
+ssh_password: "您的密码"        # 例如: "password123"
+remote_base_path: "您的远程路径"  # 例如: "/home/username/CFX_Jobs"
+
+# 5. 基础路径 - 请设置您的本地工作目录
+base_path: "您的本地工作目录/"   # 例如: "D:/Projects/MyProject/"
+
+# 6. SLURM分区 - 根据您的集群情况调整
+partition: "cpu-low"             # 分区名称
+
+# ===== 使用说明 =====
+# 1. 复制此文件为 my_config.yaml
+# 2. 修改上述标记为"您的XXX"的配置项
+# 3. 运行: python cfx_automation.py --config my_config.yaml run
+# 4. 系统将自动处理其余配置，使用默认值
+#
+# 如果需要更详细的配置，请使用 user_template.yaml 文件

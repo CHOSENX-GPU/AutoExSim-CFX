@@ -1,0 +1,53 @@
+COMMAND FILE:
+  CFX Pre Version = {{ cfx_version }}
+END
+
+>load filename={{ cfx_file_path }}, mode=cfx, overwrite=yes
+> update
+
+# 背压数组
+!@P_def = ({% for pressure in pressure_list %}{{ pressure }}{% if not loop.last %}, {% endif %}{% endfor %});
+
+# 生成def文件
+! foreach $P (@P_def) {
+
+    !$path_name = "{{ base_path }}";
+
+    !mkdir $path_name . "{{ folder_prefix }}$P/";
+
+    FLOW: {{ flow_analysis_name }}
+        # 出口背压
+        DOMAIN: {{ domain_name }}
+            &replace BOUNDARY: {{ boundary_name }}
+                Boundary Type = OUTLET
+                Interface Boundary = Off
+                Location = {{ outlet_location }}
+                BOUNDARY CONDITIONS:
+                    FLOW REGIME:
+                        Option = Subsonic
+                    END # FLOW REGIME:
+                    MASS AND MOMENTUM:
+                        Option = Average Static Pressure
+                        Pressure Profile Blend = {{ pressure_blend | default("0.05") }}
+                        Relative Pressure = $P [Pa]
+                    END # MASS AND MOMENTUM:
+                    PRESSURE AVERAGING:
+                        Option = Average Over Whole Outlet
+                    END # PRESSURE AVERAGING:
+                END # BOUNDARY CONDITIONS:
+            END # BOUNDARY: {{ boundary_name }}
+        END # DOMAIN: {{ domain_name }}
+    END # FLOW: {{ flow_analysis_name }}
+
+    > update
+
+    # 文件夹名
+    !$file_name = "{{ folder_prefix }}$P";
+    # def文件名
+    !$def_name = "{{ def_file_prefix }}$P";
+
+    > writeCaseFile filename=$path_name/$file_name/$def_name.def, operation=write def file
+    > update
+! }
+
+> update

@@ -1,0 +1,84 @@
+# CFX自动化用户配置模板
+# 请根据您的实际情况修改以下配置项
+
+# ===== 必须配置的项目 =====
+# 1. CFX文件路径 - 请修改为您的CFX文件路径
+cfx_file_path: "您的CFX文件路径.cfx"  # 例如: "D:/Projects/MyProject/model.cfx"
+
+# 2. 压力参数 - 请设置您需要的压力值
+pressure_list: [2600, 2700, 2800]  # 请修改为您需要的压力值
+pressure_unit: "Pa"
+
+# 3. 作业名称 - 请设置一个有意义的名称
+job_name: "您的作业名称"  # 例如: "Turbine_Analysis"
+
+# 4. 服务器配置 - 请填写您的服务器信息
+ssh_host: "您的服务器IP"        # 例如: "192.168.1.100"
+ssh_port: 22
+ssh_user: "您的用户名"          # 例如: "username"
+ssh_password: "您的密码"        # 例如: "password123"
+ssh_key: ""                     # SSH密钥路径（可选）
+remote_base_path: "您的远程路径"  # 例如: "/home/username/CFX_Jobs"
+
+# 5. 基础路径 - 请设置您的本地工作目录
+base_path: "您的本地工作目录/"   # 例如: "D:/Projects/MyProject/"
+
+# ===== 可选配置项目 =====
+# SLURM配置 - 根据您的集群情况调整
+partition: "cpu-low"             # 分区名称
+nodes: 1                         # 节点数
+tasks_per_node: 32               # 每节点任务数
+time_limit: "7-00:00:00"        # 时间限制
+memory_per_node: "64GB"          # 内存限制
+
+# CFX环境配置 - 通常不需要修改
+cfx_version: "22.1"
+cfx_home: "C:/Program Files/ANSYS Inc/v221/CFX"  # 本地CFX路径（自动检测时作为备选）
+cfx_pre_executable: "C:/Program Files/ANSYS Inc/v221/CFX/bin/cfx5pre.exe"  # 本地CFX Pre（自动检测时作为备选）
+cfx_solver_executable: "/opt/ansys/v221/CFX/bin/cfx5solve"  # 服务器CFX Solver可执行文件
+cfx_bin_path: "C:/Program Files/ANSYS Inc/v221/CFX/bin"  # 本地CFX二进制文件路径
+auto_detect_cfx: true  # 启用自动检测本地CFX环境
+
+# ===== 远程CFX环境配置 =====
+remote_cfx_home: "/opt/ansys/v221/CFX"
+remote_cfx_bin_path: "/opt/ansys/v221/CFX/bin"
+
+# CFX模型配置 - 根据您的模型调整
+flow_analysis_name: "Flow Analysis 1"  # 流动分析名称
+domain_name: "S1"                      # 域名称
+boundary_name: "S1 Outlet"             # 边界名称
+outlet_location: "R2_OUTFLOW"          # 出口位置
+pressure_blend: "0.05"                 # 压力混合
+
+# 文件命名配置
+folder_prefix: "P_Out_"         # 文件夹前缀
+def_file_prefix: ""             # def文件前缀
+
+# ===== 高级配置 =====
+# 生成的文件名称配置
+slurm_script_name: "CFX_INI.slurm"     # SLURM脚本文件名
+batch_script_name: "Submit_INI.sh"     # 批处理脚本文件名
+
+# 文件配置
+ini_file: "INI.res"             # 初始化文件名（可选）
+has_ini_file: true              # 是否使用初始化文件
+backup_enabled: true            # 是否启用备份
+cleanup_temp_files: true       # 是否清理临时文件
+
+# 模板配置
+template_dir: "./templates"             # 模板目录路径
+session_template: "create_def.pre.j2"  # CFX Session模板文件
+slurm_template: "CFX_INI.slurm.j2"     # SLURM作业模板文件
+batch_template: "Submit_INI.sh.j2"     # 批处理脚本模板文件
+
+# 报告配置
+report_dir: "./reports"         # 工作流程报告目录
+
+# 连接配置
+timeout: 300                    # 连接超时时间（秒）
+
+# ===== 使用说明 =====
+# 1. 复制此文件为 my_config.yaml
+# 2. 修改上述标记为"您的XXX"的配置项
+# 3. 运行: python cfx_automation.py --config my_config.yaml
+# 4. 系统将自动处理其余配置
