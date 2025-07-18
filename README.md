@@ -148,7 +148,7 @@ cfx-automation/
 ```yaml
 # 基本配置
 cfx_file_path: "您的CFX文件路径.cfx"
-pressure_list: [2600, 2700, 2800]  # 压力参数列表
+pressure_list: [2600, 2700, 2800]  # 背压参数列表
 job_name: "您的作业名称"
 
 # 服务器配置
