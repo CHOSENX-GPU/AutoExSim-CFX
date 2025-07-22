@@ -76,7 +76,7 @@
 
 ```bash
 # 克隆仓库
-git clone <repository-url> cfx-automation
+git clone https://github.com/CHOSENX-GPU/AutoExSim-CFX.git cfx-automation
 cd cfx-automation
 
 # 检查版本

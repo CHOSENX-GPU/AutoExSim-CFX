@@ -85,8 +85,8 @@ CFX_Automation/
 
 ```bash
 # 克隆项目
-git clone <repository_url>
-cd CFX_Automation
+git clone https://github.com/CHOSENX-GPU/AutoExSim-CFX.git
+cd AutoExSim-CFX
 
 # 安装依赖
 pip install -r requirements.txt
