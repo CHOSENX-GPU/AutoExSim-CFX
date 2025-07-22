@@ -41,11 +41,11 @@ do
         
         # 根据调度器类型检查对应的脚本文件
         {% if scheduler_type == "SLURM" %}
-        script_file="job_${pressure_int}.slurm"
+        script_file="{{ job_name }}_${pressure_int}.slurm"
         submit_cmd="sbatch"
         success_pattern="Submitted batch job"
         {% else %}
-        script_file="job_${pressure_int}.pbs"
+        script_file="{{ job_name }}_${pressure_int}.pbs"
         submit_cmd="qsub"
         success_pattern="."
         {% endif %}
