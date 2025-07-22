@@ -1,0 +1,26 @@
+# CFX自动化系统依赖包
+
+# 核心依赖
+PyYAML>=6.0               # YAML配置文件处理
+Jinja2>=3.1.0             # 模板引擎（用于生成SLURM脚本和CFX Session文件）
+
+# 网络和SSH
+paramiko>=3.0.0           # SSH连接和文件传输
+
+# Windows注册表支持（CFX路径检测）
+pywin32>=304; sys_platform == "win32"  # Windows注册表访问
+
+# 开发和测试依赖
+pytest>=7.0.0             # 单元测试
+pytest-cov>=4.0.0         # 测试覆盖率
+pytest-mock>=3.10.0       # 模拟测试
+
+# 代码质量工具
+black>=23.0.0             # 代码格式化
+flake8>=6.0.0             # 代码检查
+mypy>=1.0.0               # 类型检查
+
+# 命令行界面增强
+click>=8.0.0              # 命令行界面
+rich>=13.0.0              # 终端美化输出
+tqdm>=4.65.0              # 进度条

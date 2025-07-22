@@ -1,0 +1,87 @@
+# CFX自动化系统配置 - 组内老集群
+# 适用于支持PBS调度系统的组内老集群，具有智能节点分配功能
+
+# CFX环境配置
+cfx_mode: "local"                    # local: 本地生成def文件, server: 服务器生成def文件
+auto_detect_cfx: true                # 是否自动检测CFX安装路径
+cfx_home: ""                         # 本地CFX安装路径 (留空自动检测)
+cfx_bin_path: ""                     # 本地CFX bin路径 (留空自动检测)
+
+# 老集群CFX环境配置 (使用module system)
+skip_cfx_verification: true          # 跳过服务器CFX环境验证 (老集群使用module system)
+cfx_module_name: "cfx/2022r1"        # CFX模块名称 (用于module load)
+remote_cfx_home: "/usr/ansys_inc/v231/CFX"  # 服务器CFX安装路径 (仅作为参考，不进行验证)
+remote_cfx_bin_path: "/usr/ansys_inc/v231/CFX/bin"  # 服务器CFX bin路径 (仅作为参考，不进行验证)
+
+# 项目配置
+project_name: "CFX_Legacy_Project"
+job_name: "CFX_Job"
+base_path: "."                       # 本地工作目录
+
+# CFX文件配置
+cfx_file_path: "model.cfx"           # CFX模型文件路径
+initial_file: ""                     # 初始文件路径 (留空表示不使用初始文件)
+pre_template_path: "templates/create_def.pre.j2"  # .pre模板文件路径
+output_prefix: ""                    # 输出文件前缀 (留空使用作业名称)
+
+# CFX版本和基础设置
+cfx_version: "22.1"                  # CFX版本号
+output_base_path: "."                # 输出基础路径
+
+# CFX模型参数
+flow_analysis_name: "Flow Analysis 1"
+domain_name: "S1"
+outlet_boundary_name: "S1 Outlet"   # 出口边界名称
+outlet_location: "R2_OUTFLOW"
+pressure_blend: "0.05"
+
+# 参数化配置
+folder_prefix: "P_Out_"
+def_file_prefix: ""
+pressure_list: [2187, 2189, 2191]   # 压力参数列表
+pressure_unit: "Pa"
+
+# 服务器连接配置
+ssh_host: "head.old.cluster"         # 集群主节点地址
+ssh_port: 22
+ssh_user: "your_username"            # 你的用户名
+ssh_password: null                   # SSH密码 (建议使用密钥认证)
+ssh_key: ""                          # SSH私钥文件路径
+remote_base_path: "/home/your_username/CFX_Jobs"  # 服务器工作目录
+
+# 集群配置
+cluster_type: "group_old"           # 集群类型: university, group_new, group_old
+scheduler_type: "PBS"              # 调度器类型: SLURM, PBS
+
+# 节点检测和分配配置 (组内老集群通常需要)
+enable_node_detection: true         # 是否启用节点检测
+enable_node_allocation: true        # 是否启用智能节点分配
+
+# PBS作业配置
+queue: "batch"                       # PBS队列名称 (组内老集群使用batch队列)
+min_cores: 28                        # 作业所需最小核心数 (用于智能节点分配)
+walltime: "48:00:00"                 # 运行时间限制 (48小时)
+memory: "128GB"                      # 内存要求
+email: ""                            # 邮箱地址 (可选)
+email_events: "abe"                  # 邮件事件 (a=abort, b=begin, e=end)
+
+# 监控配置
+enable_monitoring: true              # 启用作业监控
+monitor_interval: 180                # 监控间隔 (秒)
+auto_download_results: true          # 自动下载结果
+cleanup_remote_files: false         # 是否清理服务器文件
+result_file_patterns:                # 结果文件模式
+  - "*.res"
+  - "*.out"
+  - "*.log"
+  - "*.err"
+
+# 文件传输配置
+transfer_retry_times: 3              # 传输重试次数
+transfer_timeout: 600                # 传输超时 (秒)
+enable_checksum_verification: true   # 启用文件完整性验证
+
+# 作业管理配置
+max_concurrent_jobs: 8               # 最大并发作业数
+job_submit_delay: 3                  # 作业提交间隔 (秒)
+max_queue_jobs: 15                   # 队列中最大作业数

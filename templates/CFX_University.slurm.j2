@@ -1,0 +1,101 @@
+#!/bin/bash
+#SBATCH -J {{ job_name }}
+#SBATCH -p {{ partition }}
+#SBATCH -N {{ nodes }}
+#SBATCH -n {{ tasks_per_node }}
+#SBATCH --ntasks-per-node {{ tasks_per_node }}
+#SBATCH -t {{ time_limit }}
+#SBATCH -o {{ output_file }}
+#SBATCH -e {{ error_file }}
+{% if qos %}#SBATCH --qos={{ qos }}{% endif %}
+{% if account %}#SBATCH --account={{ account }}{% endif %}
+{% if nodelist %}#SBATCH --nodelist={{ nodelist }}{% endif %}
+{% if exclude %}#SBATCH --exclude={{ exclude }}{% endif %}
+{% if email %}#SBATCH --mail-user={{ email }}
+#SBATCH --mail-type={{ email_events }}{% endif %}
+
+# CFX作业脚本 - 学校集群
+# 生成时间: {{ "now" | strftime('%Y-%m-%d %H:%M:%S') }}
+
+INPUT="{{ def_file }}"
+{% if initial_file %}INITIAL="{{ initial_file }}"{% endif %}
+
+echo "作业开始: $(date)"
+echo "作业名称: {{ job_name }}"
+echo "节点数量: {{ nodes }}"
+echo "每节点任务数: {{ tasks_per_node }}"
+echo "分区: {{ partition }}"
+echo "输入文件: $INPUT"
+{% if initial_file %}echo "初始文件: $INITIAL"{% endif %}
+
+# 检查输入文件
+if [ ! -f "$INPUT" ]; then
+    echo "错误: 输入文件不存在: $INPUT"
+    exit 1
+fi
+
+{% if initial_file %}
+# 检查初始文件（如果指定）
+if [ ! -f "$INITIAL" ]; then
+    echo "警告: 初始文件不存在: $INITIAL"
+fi
+{% endif %}
+
+# 生成机器文件
+srun hostname | sort > machinefile.${SLURM_JOB_ID}
+export PATH=$PATH:{{ remote_cfx_bin_path }}/
+CFX=`which cfx5solve`
+
+NP=`cat machinefile.${SLURM_JOB_ID} | wc -l`
+
+# 构建机器主机列表
+mech_host=""
+for host in ` sort -u machinefile.${SLURM_JOB_ID}`;do
+  n=$(grep -c $host machinefile.${SLURM_JOB_ID})
+        mech_host=$(echo "$host*$n,$mech_host")
+done
+mech_host=$(echo $mech_host|sed "s/,$//")
+echo "机器主机列表: $mech_host"
+
+echo "开始CFX计算..."
+
+
+# 运行CFX求解器
+{% if initial_file %}
+$CFX -def $INPUT -ini-file $INITIAL -start-method "IBM MPI Distributed Parallel" -par-dist "$mech_host"
+{% else %}
+$CFX -def $INPUT -start-method "IBM MPI Distributed Parallel" -par-dist "$mech_host"
+{% endif %}
+
+# 检查计算结果
+if [ $? -eq 0 ]; then
+    echo "CFX计算成功完成: $(date)"
+    
+    # 检查结果文件（CFX可能生成不同序号的结果文件）
+    result_pattern="{{ def_file | replace('.def', '') }}_*.res"
+    result_files=$(ls $result_pattern 2>/dev/null)
+    
+    if [ -n "$result_files" ]; then
+        echo "找到结果文件:"
+        for res_file in $result_files; do
+            echo "  - $res_file ($(du -h $res_file | cut -f1))"
+        done
+        
+        # 获取最新的结果文件
+        latest_result=$(ls -t $result_pattern 2>/dev/null | head -1)
+        if [ -n "$latest_result" ]; then
+            echo "最新结果文件: $latest_result"
+        fi
+    else
+        echo "警告: 未找到结果文件 ($result_pattern)"
+    fi
+    
+    # 清理临时文件
+    rm -f machinefile.${SLURM_JOB_ID}
+else
+    echo "错误: CFX计算失败"
+    rm -f machinefile.${SLURM_JOB_ID}
+    exit 1
+fi
+
+echo "作业完成: $(date)"

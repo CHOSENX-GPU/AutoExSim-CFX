@@ -1,0 +1,147 @@
+#!/bin/bash
+#SBATCH -J {{ job_name }}
+#SBATCH -N {{ nodes }}
+#SBATCH -n {{ tasks_per_node * nodes }}
+#SBATCH --ntasks-per-node={{ tasks_per_node }}
+#SBATCH -p {{ partition }}
+
+# CFX作业脚本 - 组内新集群
+# 基于实际集群配置，支持带/不带初始文件的计算
+# 生成时间: {{ "now" | strftime('%Y-%m-%d %H:%M:%S') }}
+
+# 输入文件定义
+INPUT="{{ def_file }}"
+LOG_FILE="{{ output_prefix | default(job_name) }}.out"
+{% if initial_file %}INITIAL="{{ initial_file }}"{% endif %}
+
+echo "==================== 作业信息 ===================="
+echo "作业开始: $(date)"
+echo "作业名称: {{ job_name }}"
+echo "节点数: {{ nodes }}"
+echo "每节点核数: {{ tasks_per_node }}"
+echo "分区: {{ partition }}"
+echo "输入文件: $INPUT"
+{% if initial_file %}echo "初始文件: $INITIAL"{% endif %}
+echo "日志文件: $LOG_FILE"
+echo "=============================================="
+
+# 检查输入文件
+if [ ! -f "$INPUT" ]; then
+    echo "错误: 输入文件不存在: $INPUT"
+    exit 1
+fi
+
+{% if initial_file %}
+# 检查初始文件（如果指定）
+if [ ! -f "$INITIAL" ]; then
+    echo "错误: 初始文件不存在: $INITIAL"
+    exit 1
+fi
+{% endif %}
+
+# 设置CFX环境路径
+export PATH=$PATH:{{ cfx_bin_path | default('/home/opt/ansys/ansys2022r1/v221/CFX/bin/') }}
+CFX=`which cfx5solve`
+
+echo "CFX路径: $CFX"
+
+# 生成主机列表并构建并行分布
+srun -N $SLURM_JOB_NUM_NODES hostname -s > ${SLURM_JOBID}.list
+
+# 清理之前的临时文件
+rm -rf 1.abc 2.abc $LOG_FILE
+touch 1.abc
+
+# 构建主机分布列表
+sort -u ${SLURM_JOBID}.list > 1.abc
+for host in `cat 1.abc`
+do
+ hosthead=`tail -n 1 1.abc`
+ if [ $host == "$hosthead" ];then
+   echo -e "$host*{{ tasks_per_node }}\c" >> 2.abc
+ elif [ $host != "$hosthead" ];then
+   echo -e "$host*{{ tasks_per_node }},\c" >> 2.abc
+  fi
+done
+HLIST=`cat 2.abc`
+
+echo "主机并行分布: $HLIST"
+
+echo "==================== 开始CFX计算 ===================="
+echo "开始时间: $(date)"
+
+# 执行CFX求解器
+{% if initial_file %}
+echo "执行命令: $CFX -def $INPUT -ini-file $INITIAL -par-dist $HLIST -start-method \"Platform MPI Distributed Parallel\""
+$CFX -def $INPUT -ini-file $INITIAL -par-dist $HLIST -start-method "Platform MPI Distributed Parallel" >& $LOG_FILE
+{% else %}
+echo "执行命令: $CFX -def $INPUT -par-dist $HLIST -start-method \"Platform MPI Distributed Parallel\""
+$CFX -def $INPUT -par-dist $HLIST -start-method "Platform MPI Distributed Parallel" >& $LOG_FILE
+{% endif %}
+
+# 检查计算结果
+EXIT_CODE=$?
+echo "CFX求解器退出码: $EXIT_CODE"
+
+if [ $EXIT_CODE -eq 0 ]; then
+    echo "==================== 计算成功 ===================="
+    echo "完成时间: $(date)"
+    
+    # 检查结果文件
+    echo "查找结果文件..."
+    result_pattern="{{ def_file | replace('.def', '') }}_*.res"
+    backup_pattern="{{ def_file | replace('.def', '') }}_*.bak"
+    transient_pattern="{{ def_file | replace('.def', '') }}_*.trn"
+    
+    # 检查各类结果文件
+    echo "结果文件检查:"
+    found_files=false
+    
+    for pattern in "$result_pattern" "$backup_pattern" "$transient_pattern"; do
+        files=$(ls $pattern 2>/dev/null)
+        if [ -n "$files" ]; then
+            for file in $files; do
+                echo "  - $file ($(du -h $file | cut -f1))"
+                found_files=true
+            done
+        fi
+    done
+    
+    if [ "$found_files" = false ]; then
+        echo "  检查其他结果文件:"
+        ls -la *.res *.bak *.trn *.out 2>/dev/null || echo "  未找到结果文件"
+    fi
+    
+    # 显示日志摘要
+    if [ -f "$LOG_FILE" ]; then
+        echo "============ 计算日志摘要 ============"
+        echo "收敛信息:"
+        grep -i "converged\|convergence" $LOG_FILE | tail -5 || echo "  未找到收敛信息"
+        
+        echo "============ 日志末尾 ============"
+        tail -10 $LOG_FILE
+        echo "================================"
+    fi
+    
+else
+    echo "==================== 计算失败 ===================="
+    echo "错误: CFX计算失败，退出码: $EXIT_CODE"
+    
+    if [ -f "$LOG_FILE" ]; then
+        echo "============ 错误日志 ============"
+        echo "查找错误信息:"
+        grep -i "error\|fail\|abort\|fatal" $LOG_FILE | tail -10 || echo "  未找到明显错误信息"
+        
+        echo "============ 日志末尾 ============"
+        tail -30 $LOG_FILE
+        echo "=============================="
+    fi
+fi
+
+# 清理临时文件
+rm -rf ${SLURM_JOBID}.list 1.abc 2.abc
+
+echo "==================== 作业结束 ===================="
+echo "结束时间: $(date)"
+echo "作业ID: $SLURM_JOB_ID"
+echo "退出码: $EXIT_CODE"

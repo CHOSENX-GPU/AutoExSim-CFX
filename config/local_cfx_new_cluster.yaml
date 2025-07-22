@@ -1,0 +1,93 @@
+# CFX自动化系统配置 - 组内新集群
+# 适用于支持SLURM调度系统的组内新集群，具有智能节点分配功能
+
+# CFX环境配置
+cfx_mode: "local"                    # local: 本地生成def文件, server: 服务器生成def文件
+auto_detect_cfx: true                # 是否自动检测CFX安装路径
+cfx_home: ""                         # 本地CFX安装路径 (留空自动检测)
+cfx_bin_path: ""                     # 本地CFX bin路径 (留空自动检测)
+remote_cfx_home: "/home/opt/ansys/ansys2022r1/v221/CFX"  # 组内集群CFX安装路径
+remote_cfx_bin_path: "/home/opt/ansys/ansys2022r1/v221/CFX/bin/"  # 组内集群CFX bin路径
+cfx_module: "ansys/cfx/2022r1"       # CFX模块名称 (如果集群使用module系统)
+use_module: false                    # 是否使用module加载CFX
+
+# 项目配置
+project_name: "CFX_Group_Project"
+job_name: "CFX_Job"
+base_path: "."                       # 本地工作目录
+
+# CFX文件配置
+cfx_file_path: "model.cfx"           # CFX模型文件路径
+initial_file: ""                     # 初始文件路径 (留空表示不使用初始文件)
+pre_template_path: "templates/create_def_simple.pre.j2"  # .pre模板文件路径
+output_prefix: ""                    # 输出文件前缀 (留空使用作业名称)
+
+# CFX版本和基础设置
+cfx_version: "22.1"                  # CFX版本号
+output_base_path: "."                # 输出基础路径
+
+# CFX模型参数
+flow_analysis_name: "Flow Analysis 1"
+domain_name: "S1"
+outlet_boundary_name: "S1 Outlet"   # 出口边界名称
+inlet_boundary_name: "R1 Inlet"     # 入口边界名称
+outlet_location: "Entire R2_OUTFLOW"
+inlet_location: "Entire R1_INFLOW"
+pressure_blend: "0.05"
+
+# 参数化配置
+folder_prefix: "P_Out_"
+def_file_prefix: ""
+pressure_list: [2187, 2189, 2191, 2193, 2195]  # 压力参数列表
+pressure_unit: "Pa"
+
+# 服务器连接配置
+ssh_host: "master.group.cluster"     # 集群主节点地址
+ssh_port: 22
+ssh_user: "your_username"            # 你的用户名
+ssh_password: null                   # SSH密码 (建议使用密钥认证)
+ssh_key: ""                          # SSH私钥文件路径
+remote_base_path: "/home/your_username/CFX_Jobs"  # 服务器工作目录
+
+# 集群配置
+cluster_type: "group_new"            # 集群类型: university, group_new, group_old
+scheduler_type: "SLURM"              # 调度器类型: SLURM, PBS
+
+# 模板配置 - 统一使用一个模板
+sbatch_template: "CFX_Group_Cluster.sbatch.j2"  # 组内新集群统一模板
+
+# 节点检测和分配配置
+enable_node_detection: false         # 启用节点检测
+enable_node_allocation: false        # 启用智能节点分配
+node_allocation_strategy: "hybrid"   # 分配策略: batch_allocation, node_reuse, smart_queue, hybrid
+
+# SLURM作业配置
+partition: "batch"                   # 分区名称 (组内集群使用batch分区)
+nodes: 1                             # 默认节点数量 (可被智能分配覆盖)
+tasks_per_node: 32                   # 每节点任务数
+total_tasks: 32                      # 总任务数 (nodes * tasks_per_node)
+time_limit: "2-00:00:00"             # 时间限制 (2天)
+memory_per_node: "128GB"             # 每节点内存
+qos: ""                              # QoS设置
+exclude_nodes: "master"              # 排除的节点 (组内集群通常排除master节点)
+
+# 监控配置
+enable_monitoring: true              # 启用作业监控
+monitor_interval: 120                # 监控间隔 (秒)
+auto_download_results: true          # 自动下载结果
+cleanup_remote_files: false         # 是否清理服务器文件
+result_file_patterns:                # 结果文件模式
+  - "*.res"
+  - "*.out"
+  - "*.log"
+  - "*.err"
+
+# 文件传输配置
+transfer_retry_times: 3              # 传输重试次数
+transfer_timeout: 600                # 传输超时 (秒)
+enable_checksum_verification: true   # 启用文件完整性验证
+
+# 作业管理配置
+max_concurrent_jobs: 5               # 最大并发作业数
+job_submit_delay: 2                  # 作业提交间隔 (秒)
+max_queue_jobs: 20                   # 队列中最大作业数

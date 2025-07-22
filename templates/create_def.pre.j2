@@ -1,0 +1,101 @@
+# CFX Pre Session File Template
+# 用于批量生成.def文件
+
+# 读取CFX文件
+FILE:
+  CFX Post
+    Version = 2023 R1
+LIBRARY:
+  CEL:
+  END
+
+SESSION:
+    CASE:
+        File = {{ cfx_file_path }}
+        Save State = On
+    END
+    
+    # 设置分析参数
+    FLOW:
+        Solution Units = SI
+        Turbulence Model = k epsilon
+        Heat Transfer Model = Thermal Energy
+        
+        ANALYSIS TYPE:
+            Option = Steady State
+        END
+        
+        # 设置边界条件
+        BOUNDARY:
+            {{ outlet_boundary_name }}:
+                Boundary Type = OUTLET
+                Location = {{ outlet_location }}
+                
+                BOUNDARY CONDITIONS:
+                    MASS AND MOMENTUM:
+                        Option = Static Pressure
+                        Relative Pressure = {{ pressure }} [{{ pressure_unit }}]
+                        Pressure Blend = {{ pressure_blend }}
+                    END
+                    
+                    HEAT TRANSFER:
+                        Option = Static Temperature
+                        Static Temperature = 293.15 [K]
+                    END
+                END
+            END
+        END
+        
+        DOMAIN: {{ domain_name }}
+            Material = Air at 25 C
+            
+            PHYSICS:
+                Reference Pressure = 101325 [Pa]
+            END
+        END
+    END
+    
+    # 求解器设置
+    SOLVER CONTROL:
+        Equation Class = Euler
+        
+        ADVECTION SCHEME:
+            Option = High Resolution
+        END
+        
+        CONVERGENCE CONTROL:
+            Maximum Number of Iterations = 500
+            Timescale Control = Auto Timescale
+            
+            CONVERGENCE CRITERIA:
+                Residual Target = 1.0e-4
+                Residual Type = RMS
+            END
+        END
+    END
+    
+    # 输出控制
+    OUTPUT CONTROL:
+        RESULTS:
+            File Compression = Off
+            Option = Standard
+            Include Mesh = No
+        END
+        
+        MONITOR OBJECTS:
+        END
+    END
+    
+    # 保存.def文件
+    COMMAND:
+        Action = WRITE_STATE
+        State File = {{ folder_prefix }}{{ pressure }}/{{ def_file_prefix }}{{ pressure }}.def
+    END
+    
+    # 退出
+    COMMAND:
+        Action = QUIT
+        Option = WITHOUT_SAVE
+    END
+
+END

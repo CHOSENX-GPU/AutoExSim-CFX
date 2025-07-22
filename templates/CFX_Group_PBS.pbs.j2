@@ -1,0 +1,54 @@
+#!/bin/bash
+#PBS -N {{ job_name.lower()[:15] }}
+#PBS -l nodes={{ nodes_spec }}
+#PBS -l walltime={{ walltime | default('96:00:00') }}
+#PBS -q {{ queue | default('batch') }}
+#PBS -o {{ job_name.lower() }}.log
+#PBS -e {{ job_name.lower() }}.err
+
+# 文件变量定义（使用相对路径，与成功脚本保持一致）
+{% if def_file %}
+INPUT={{ def_file }}
+{% else %}
+INPUT=""
+{% endif %}
+{% if log_file %}
+LOG_FILE={{ log_file }}
+{% else %}
+LOG_FILE={{ job_name.lower() }}.log
+{% endif %}
+{% if initial_file %}
+INITIAL={{ initial_file_basename }}
+{% endif %}
+
+module load {{ cfx_module_name | default('ansys/cfx/2022r1') }}
+
+ulimit -s unlimited
+
+cd $PBS_O_WORKDIR
+nodes=$(uniq -c $PBS_NODEFILE | awk '{printf ","$2"*"$1}')
+
+# 从nodes_spec直接解析并生成CFX并行配置
+# nodes_spec格式现在已经是短格式: n43:ppn=28 或 n41:ppn=28+n61:ppn=16
+# 目标格式: n43*28 或 n41*28,n61*16
+NODES_SPEC="{{ nodes_spec }}"
+CFX_PARALLEL_CONFIG=$(echo "$NODES_SPEC" | sed 's/+/\n/g' | awk -F':ppn=' '{
+    if (NF == 2) {
+        node_name = $1
+        ppn = $2
+        if (NR > 1) printf ","
+        printf "%s*%s", node_name, ppn
+    }
+}')
+echo "PBS节点规格: {{ nodes_spec }}"
+echo "CFX并行配置: $CFX_PARALLEL_CONFIG"
+
+# 执行CFX计算
+echo "开始CFX计算..."
+{% if initial_file %}
+echo "使用初始文件: $INITIAL"
+cfx5solve -batch -start-method "Intel MPI Distributed Parallel" -def $INPUT -ini-file $INITIAL -par-dist $CFX_PARALLEL_CONFIG >& $LOG_FILE
+{% else %}
+echo "无初始文件，直接计算"
+cfx5solve -batch -start-method "Intel MPI Distributed Parallel" -def $INPUT -par-dist $CFX_PARALLEL_CONFIG >& $LOG_FILE
+{% endif %}

@@ -1,0 +1,55 @@
+COMMAND FILE:
+  CFX Pre Version = {{ cfx_version | default("22.1") }}
+END
+
+>load filename={{ cfx_file_path }}, mode=cfx, overwrite=yes
+> update
+
+# 背压数组
+!@P_def = ({{ pressure_list | join(', ') }});
+
+# 生成def文件
+! foreach $P (@P_def) {
+
+    !$path_name = "{{ output_base_path | default('.') | replace('\\', '/') }}/";
+
+    !mkdir $path_name . "{{ folder_prefix | default('P_Out_') }}$P/";
+
+    FLOW: {{ flow_analysis_name | default("Flow Analysis 1") }}
+        # 出口背压
+        DOMAIN: {{ domain_name | default("S1") }}
+            &replace BOUNDARY: {{ outlet_boundary_name | default("S1 Outlet") }}
+                Boundary Type = OUTLET
+                Interface Boundary = Off
+                Location = {{ outlet_location | default("R2_OUTFLOW") }}
+                BOUNDARY CONDITIONS:
+                    FLOW REGIME:
+                        Option = Subsonic
+                    END # FLOW REGIME:
+                    MASS AND MOMENTUM:
+                        Option = Average Static Pressure
+                        Pressure Profile Blend = {{ pressure_blend | default("0.05") }}
+                        Relative Pressure = $P [{{ pressure_unit | default("Pa") }}]
+                    END # MASS AND MOMENTUM:
+                    PRESSURE AVERAGING:
+                        Option = Average Over Whole Outlet
+                    END # PRESSURE AVERAGING:
+                END # BOUNDARY CONDITIONS:
+            END # BOUNDARY: {{ outlet_boundary_name | default("S1 Outlet") }}
+        END # DOMAIN: {{ domain_name | default("S1") }}
+    END # FLOW: {{ flow_analysis_name | default("Flow Analysis 1") }}
+
+    > update
+
+    # 文件夹名
+    !$file_name = "{{ folder_prefix | default('P_Out_') }}$P";
+    # def文件名
+    !$def_name = "$P";
+    
+    > writeCaseFile filename=$path_name/$file_name/$def_name.def, operation=write def file
+    > update
+! }
+
+> update
+
+> update

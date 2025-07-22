@@ -1,0 +1,145 @@
+#!/bin/bash
+# 批量提交CFX作业脚本 - 自动生成
+# 作业名称: {{ job_name }}
+# 生成时间: $(date)
+# 背压列表: {{ pressure_list | join(', ') }}
+
+# 设置基础路径
+BASE_PATH="{{ remote_base_path }}"
+JOB_NAME="{{ job_name }}"
+
+# 定义背压列表
+PRESSURE_LIST=({% for pressure in pressure_list %}{{ pressure }}{% if not loop.last %} {% endif %}{% endfor %})
+
+# 记录开始时间
+echo "开始批量提交作业: $(date)"
+echo "基础路径: $BASE_PATH"
+echo "作业名称: $JOB_NAME"
+echo "背压列表: ${PRESSURE_LIST[@]}"
+echo "======================================================="
+
+# 计数器
+submitted_count=0
+failed_count=0
+
+# 遍历背压列表提交作业
+for pressure in "${PRESSURE_LIST[@]}"
+do
+    # 构建目录路径（去掉小数点后的0）
+    pressure_int=$(echo "$pressure" | sed 's/\.0$//')
+    pressure_dir="${BASE_PATH}/P_Out_${pressure_int}"
+    
+    echo "=================================================="
+    echo "正在处理背压: ${pressure} (目录: P_Out_${pressure_int})"
+    
+    # 检查目录是否存在
+    if [ -d "$pressure_dir" ]; then
+        echo "✓ 目录存在: $pressure_dir"
+        
+        # 进入目标目录
+        cd "$pressure_dir"
+        
+        # 根据调度器类型检查对应的脚本文件
+        {% if scheduler_type == "SLURM" %}
+        script_file="job_${pressure_int}.slurm"
+        submit_cmd="sbatch"
+        success_pattern="Submitted batch job"
+        {% else %}
+        script_file="job_${pressure_int}.pbs"
+        submit_cmd="qsub"
+        success_pattern="."
+        {% endif %}
+        
+        if [ -f "$script_file" ]; then
+            echo "✓ 找到脚本文件: $script_file"
+            
+            # 提交作业
+            echo "  提交作业中..."
+            job_result=$($submit_cmd "$script_file" 2>&1)
+            
+            {% if scheduler_type == "SLURM" %}
+            if [[ $job_result == *"Submitted batch job"* ]]; then
+                echo "  ✓ 成功提交作业: P_Out_${pressure_int} - $job_result"
+                ((submitted_count++))
+            else
+                echo "  ✗ 提交失败: P_Out_${pressure_int} - $job_result"
+                ((failed_count++))
+            fi
+            {% else %}
+            # PBS: qsub成功时返回作业ID，失败时输出错误信息
+            if [[ $job_result =~ ^[0-9]+\. ]]; then
+                echo "  ✓ 成功提交作业: P_Out_${pressure_int} - Job ID: $job_result"
+                ((submitted_count++))
+            else
+                echo "  ✗ 提交失败: P_Out_${pressure_int} - $job_result"
+                ((failed_count++))
+            fi
+            {% endif %}
+        else
+            {% if scheduler_type == "SLURM" %}
+            echo "  ✗ 未找到SLURM脚本: $script_file"
+            {% else %}
+            echo "  ✗ 未找到PBS脚本: $script_file"
+            {% endif %}
+            ((failed_count++))
+        fi
+        
+        # 返回基础目录
+        cd "$BASE_PATH"
+        
+        # 添加延迟
+        echo "  等待 2 秒后提交下一个作业..."
+        sleep 2
+    else
+        echo "  ✗ 目录不存在: $pressure_dir"
+        ((failed_count++))
+    fi
+    
+    # 打印当前操作的目录
+    echo "Completed processing for P_Out_${pressure_int}"
+done
+
+# 输出汇总信息
+echo "======================================================="
+echo "=================== 提交汇总 ==================="
+echo "提交成功: $submitted_count 个作业"
+echo "提交失败: $failed_count 个作业"
+echo "总计: $((submitted_count + failed_count)) 个作业"
+echo "完成时间: $(date)"
+
+# 如果有提交成功的作业，显示队列状态
+if [ $submitted_count -gt 0 ]; then
+    echo ""
+    echo "当前队列状态:"
+    echo "=================================================="
+    {% if scheduler_type == "SLURM" %}
+    squeue -u $USER --format="%.8i %.9P %.20j %.8u %.8T %.10M %.6D %R"
+    {% else %}
+    qstat -u $USER
+    {% endif %}
+    
+    echo ""
+    echo "监控建议:"
+    {% if scheduler_type == "SLURM" %}
+    echo "  查看队列: squeue -u \$USER"
+    echo "  查看作业详情: scontrol show job <JOB_ID>"
+    echo "  取消作业: scancel <JOB_ID>"
+    {% else %}
+    echo "  查看队列: qstat -u \$USER"
+    echo "  查看作业详情: qstat -f <JOB_ID>"
+    echo "  取消作业: qdel <JOB_ID>"
+    {% endif %}
+fi
+
+echo ""
+echo "日志文件位置: 各子目录下的 *.out 和 *.err"
+echo "结果文件位置: 各子目录下的 *_*.res (如 {% if pressure_list %}{{ pressure_list[0] | int }}{% else %}2300{% endif %}_001.res 等)"
+echo ""
+echo "建议使用 Monitor_Jobs.sh 脚本监控作业状态"
+
+# 返回适当的退出码
+if [ $failed_count -gt 0 ]; then
+    exit 1
+else
+    exit 0
+fi

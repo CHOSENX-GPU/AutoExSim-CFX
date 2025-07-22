@@ -1,0 +1,215 @@
+COMMAND FILE:
+  CFX Pre Version = {{ cfx_version | default("22.1") }}
+END
+
+{# 加载CFX模型文件 #}
+>load filename={{ cfx_file_path }}, mode=cfx, overwrite=yes
+> update
+
+{# 压力参数数组定义 #}
+!@P_def = ({{ pressure_list | join(',') }});
+
+{# 生成def文件的循环 #}
+! foreach $P (@P_def) {
+
+    {# 设置输出路径 #}
+    !$path_name = "{{ output_base_path | default('.') }}";
+    !mkdir $path_name."/{{ folder_prefix }}$P/";
+
+{###################模型参数设置################### #}
+
+{# 监测参量定义 #}
+LIBRARY:
+  CEL:
+    EXPRESSIONS:
+      {# 压力系数 #}
+      PsR = (massFlowAve(Pressure)@{{ outlet_boundary_name }} - massFlowAve(Total Pressure in Stn Frame)@{{ inlet_boundary_name }})/0.5/{{ fluid_density | default("1.225") }}/(Um ^2)
+      {# 叶轮参数 #}
+      Rm = {{ mean_radius | default("0.2505") }}
+      Um = 2*pi*{{ rotational_speed | default("2930") }}*Rm /60
+      {# 质量流量监测 #}
+      massin = massFlow()@{{ inlet_boundary_name }}*{{ mass_scale_factor_in | default("10") }}
+      massout = massFlow()@{{ outlet_boundary_name }}*{{ mass_scale_factor_out | default("-9") }}
+      {# 自定义表达式 #}
+      {% for expr in custom_expressions | default([]) %}
+      {{ expr.name }} = {{ expr.formula }}
+      {% endfor %}
+    END
+  END
+END
+
+    FLOW: {{ flow_analysis_name | default("Flow Analysis 1") }}
+        {# 出口边界条件设置 #}
+        DOMAIN: {{ domain_name | default("S1") }}
+            &replace BOUNDARY: {{ outlet_boundary_name | default("S1 Outlet") }}
+                Boundary Type = OUTLET
+                Interface Boundary = Off
+                {# 出口位置 #}
+                Location = {{ outlet_location | default("Entire R2_OUTFLOW") }}
+
+                BOUNDARY CONDITIONS:
+                    FLOW REGIME:
+                        Option = {{ flow_regime | default("Subsonic") }}
+                    END # FLOW REGIME:
+                    MASS AND MOMENTUM:
+                        Option = {{ pressure_option | default("Average Static Pressure") }}
+                        {# 压力混合因子 #}
+                        Pressure Profile Blend = {{ pressure_blend | default("0.05") }}
+                        {# 相对压力值 #}
+                        Relative Pressure = $P [{{ pressure_unit | default("Pa") }}]
+                        {# 附加边界条件 #}
+                        {% for condition in additional_boundary_conditions | default([]) %}
+                        {{ condition.parameter }} = {{ condition.value }}
+                        {% endfor %}
+                    END # MASS AND MOMENTUM:
+                    PRESSURE AVERAGING:
+                        Option = {{ pressure_averaging | default("Average Over Whole Outlet") }}
+                    END # PRESSURE AVERAGING:
+                END # BOUNDARY CONDITIONS:
+            END # BOUNDARY: {{ outlet_boundary_name | default("S1 Outlet") }}
+            
+            {# 入口边界条件（如果需要修改） #}
+            {% if modify_inlet %}
+            &replace BOUNDARY: {{ inlet_boundary_name | default("R1 Inlet") }}
+                Boundary Type = INLET
+                Location = {{ inlet_location | default("Entire R1_INFLOW") }}
+                BOUNDARY CONDITIONS:
+                    FLOW REGIME:
+                        Option = {{ inlet_flow_regime | default("Subsonic") }}
+                    END # FLOW REGIME:
+                    MASS AND MOMENTUM:
+                        Option = {{ inlet_condition_type | default("Total Pressure") }}
+                        {% if inlet_condition_type == "Total Pressure" %}
+                        Relative Total Pressure = {{ inlet_total_pressure | default("0 [Pa]") }}
+                        {% elif inlet_condition_type == "Mass Flow Rate" %}
+                        Mass Flow Rate = {{ inlet_mass_flow | default("1.0 [kg s^-1]") }}
+                        {% endif %}
+                    END # MASS AND MOMENTUM:
+                    TURBULENCE:
+                        Option = {{ inlet_turbulence_option | default("Medium Intensity and Eddy Viscosity Ratio") }}
+                    END # TURBULENCE:
+                END # BOUNDARY CONDITIONS:
+            END # BOUNDARY: {{ inlet_boundary_name | default("R1 Inlet") }}
+            {% endif %}
+            
+        END # DOMAIN: {{ domain_name | default("S1") }}
+
+        {# 求解器控制设置 #}
+        &replace SOLVER CONTROL:
+            Turbulence Numerics = {{ turbulence_numerics | default("First Order") }}
+            ADVECTION SCHEME:
+                Option = {{ advection_scheme | default("High Resolution") }}
+            END # ADVECTION SCHEME:
+            CONVERGENCE CONTROL:
+                Length Scale Option = {{ length_scale_option | default("Conservative") }}
+                {# 最大迭代步数 #}
+                Maximum Number of Iterations = {{ max_iterations | default("5000") }}
+                Minimum Number of Iterations = {{ min_iterations | default("1") }}
+                Timescale Control = {{ timescale_control | default("Auto Timescale") }}
+                Timescale Factor = {{ timescale_factor | default("1.0") }}
+            END # CONVERGENCE CONTROL:
+            CONVERGENCE CRITERIA:
+                Residual Target = {{ residual_target | default("0.000001") }}
+                Residual Type = {{ residual_type | default("RMS") }}
+            END # CONVERGENCE CRITERIA:
+            DYNAMIC MODEL CONTROL:
+                Global Dynamic Model Control = {{ dynamic_model_control | default("On") }}
+            END # DYNAMIC MODEL CONTROL:
+            INTERRUPT CONTROL:
+                Option = {{ interrupt_control | default("All Interrupts") }}
+                CONVERGENCE CONDITIONS:
+                    Option = {{ convergence_conditions | default("Default Conditions") }}
+                END # CONVERGENCE CONDITIONS:
+            END # INTERRUPT CONTROL:
+        END # SOLVER CONTROL:
+
+        {# 输出控制设置 #}
+        &replace OUTPUT CONTROL:
+            {# 监测对象设置 #}
+            MONITOR OBJECTS:
+                {# 效率监测 #}
+                {% if enable_efficiency_monitor | default(true) %}
+                EFFICIENCY OUTPUT:
+                    Efficiency Calculation Method = {{ efficiency_method | default("Total to Total") }}
+                    Efficiency Type = {{ efficiency_type | default("Both Compression and Expansion") }}
+                    Inflow Boundary = {{ inlet_boundary_name | default("R1 Inlet") }}
+                    Option = Output To Solver Monitor
+                    Outflow Boundary = {{ outlet_boundary_name | default("S1 Outlet") }}
+                END
+                {% endif %}
+                
+                {# 基本监测 #}
+                MONITOR BALANCES:
+                    Option = {{ monitor_balances | default("Full") }}
+                END
+                MONITOR FORCES:
+                    Option = {{ monitor_forces | default("Full") }}
+                END
+                MONITOR PARTICLES:
+                    Option = {{ monitor_particles | default("Full") }}
+                END
+                
+                {# 自定义监测点 #}
+                MONITOR POINT: Mass in
+                    Coord Frame = Coord 0
+                    Expression Value = massin
+                    Option = Expression
+                END
+                MONITOR POINT: Mass out
+                    Coord Frame = Coord 0
+                    Expression Value = massout
+                    Option = Expression
+                END
+                MONITOR POINT: Ps R
+                    Coord Frame = Coord 0
+                    Expression Value = PsR
+                    Option = Expression
+                END
+                
+                {# 用户自定义监测点 #}
+                {% for monitor in custom_monitors | default([]) %}
+                MONITOR POINT: {{ monitor.name }}
+                    Coord Frame = {{ monitor.coord_frame | default("Coord 0") }}
+                    Expression Value = {{ monitor.expression }}
+                    Option = Expression
+                    {% if monitor.output_file %}
+                    Output File = {{ monitor.output_file }}
+                    {% endif %}
+                END
+                {% endfor %}
+                
+                MONITOR RESIDUALS:
+                    Option = {{ monitor_residuals | default("Full") }}
+                END
+                MONITOR TOTALS:
+                    Option = {{ monitor_totals | default("Full") }}
+                END
+            END
+            
+            {# 结果文件输出设置 #}
+            {% if enable_result_files | default(true) %}
+            RESULTS:
+                File Compression = {{ file_compression | default("Compressed") }}
+                Option = {{ results_option | default("Standard") }}
+                {% for result_file in additional_result_files | default([]) %}
+                {{ result_file.type }} = {{ result_file.value }}
+                {% endfor %}
+            END # RESULTS:
+            {% endif %}
+            
+        END # OUTPUT CONTROL:
+
+    END # FLOW: {{ flow_analysis_name | default("Flow Analysis 1") }}
+
+    > update
+
+    {# 定义输出文件名 #}
+    !$file_name = "{{ folder_prefix | default('P_Out_') }}$P";
+    !$def_name = "{{ def_file_prefix }}$P";
+
+    {# 写入def文件 #}
+    > writeCaseFile filename=$path_name/$file_name/$def_name.def, operation=write def file
+    > update
+! }
+
+> update

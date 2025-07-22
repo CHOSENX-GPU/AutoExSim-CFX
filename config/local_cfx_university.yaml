@@ -1,0 +1,76 @@
+# CFX自动化系统配置 - 学校集群
+# 适用于支持SLURM调度系统的学校高性能计算集群
+
+# CFX环境配置
+cfx_mode: "local"                    # local: 本地生成def文件, server: 服务器生成def文件
+auto_detect_cfx: true                # 是否自动检测CFX安装路径
+cfx_home: ""                         # 本地CFX安装路径 (留空自动检测)
+cfx_bin_path: ""                     # 本地CFX bin路径 (留空自动检测)
+remote_cfx_home: "/opt/ansys_inc/v231/CFX"  # 服务器CFX安装路径
+remote_cfx_bin_path: "/opt/ansys_inc/v231/CFX/bin"  # 服务器CFX bin路径
+
+# 项目配置
+project_name: "CFX_Automation_Project"
+job_name: "CFX_Job"
+base_path: "."                       # 本地工作目录
+
+# CFX文件配置
+cfx_file_path: "model.cfx"           # CFX模型文件路径
+pre_template_path: "templates/create_def.pre.j2"  # .pre模板文件路径
+
+# CFX模型参数
+flow_analysis_name: "Flow Analysis 1"
+domain_name: "S1"
+outlet_boundary_name: "S1 Outlet"
+outlet_location: "R2_OUTFLOW"
+pressure_blend: "0.05"
+
+# 参数化配置
+folder_prefix: "P_Out_"
+def_file_prefix: ""
+pressure_list: [2187, 2189, 2191]   # 压力参数列表
+pressure_unit: "Pa"
+
+# 服务器连接配置
+ssh_host: "cluster.university.edu"   # 集群登录节点地址
+ssh_port: 22
+ssh_user: "your_username"            # 你的用户名
+ssh_password: null                   # SSH密码 (建议使用密钥认证)
+ssh_key: ""                          # SSH私钥文件路径
+remote_base_path: "/home/your_username/CFX_Jobs"  # 服务器工作目录
+
+# 集群配置
+cluster_type: "university"           # 集群类型: university, group_new, group_old
+scheduler_type: "SLURM"              # 调度器类型: SLURM, PBS
+
+# 节点检测和分配配置 (学校集群通常不需要)
+enable_node_detection: false         # 是否启用节点检测
+enable_node_allocation: false        # 是否启用智能节点分配
+
+# SLURM作业配置
+partition: "cpu-low"                 # 分区名称
+nodes: 1                             # 节点数量
+tasks_per_node: 32                   # 每节点任务数
+time_limit: "7-00:00:00"             # 时间限制 (7天)
+memory_per_node: "64GB"              # 每节点内存
+qos: ""                              # QoS设置 (如果有)
+
+# 监控配置
+enable_monitoring: true              # 是否启用作业监控
+monitor_interval: 300                # 监控间隔 (秒)
+auto_download_results: true          # 自动下载结果
+cleanup_remote_files: false         # 是否清理服务器文件
+result_file_patterns:                # 结果文件模式
+  - "*.res"
+  - "*.out" 
+  - "*.log"
+  - "*.err"
+
+# 文件传输配置
+transfer_retry_times: 3              # 传输重试次数
+transfer_timeout: 300                # 传输超时 (秒)
+enable_checksum_verification: true   # 启用文件完整性验证
+
+# 作业管理配置
+max_concurrent_jobs: 10              # 最大并发作业数
+job_submit_delay: 5                  # 作业提交间隔 (秒)
